@@ -281,11 +281,6 @@ class WordpressReadOnly extends WordpressReadOnlyGeneric {
 		add_filter('wp_handle_upload_prefilter', array($this, 'handle_upload_prefilter')); // This is where we check for filename dupes (and change them to avoid overwrites).
 		add_filter('shutdown', array($this, 'shutdown'));
 
-		// Support for Gravity Forms if Gravity Forms is enabled
-		if(class_exists("GFCommon")) {
-			add_action("gform_after_submission", array($this, 'gravityforms_after_submission'), 10, 2);
-		}
-
 		switch (wpro_get_option('wpro-service')) {
 		case 'ftp':
 			$this->backend = new WordpressReadOnlyFTP();
@@ -680,26 +675,6 @@ class WordpressReadOnly extends WordpressReadOnlyGeneric {
 		$file['name'] = $name;
 
 		return $file;
-	}
-
-	function gravityforms_after_submission($entry, $form) {
-		$this->debug('WordpressReadOnly::gravityforms_after_submission($entry, $form);');
-
-		$upload_dir = wp_upload_dir();
-		foreach($form['fields'] as $field) {
-			if ($field['type'] == 'fileupload') {
-				$id = (int) $field['id'];
-				$file_to_upload = $entry[$id];
-				if($file_to_upload) {
-					$url = $entry[$id];
-					$file_to_upload = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], $file_to_upload);
-					$mime = wp_check_filetype($file_to_upload);
-
-					$response = $this->backend->upload($file_to_upload, $url, $mime['type']);
-					if (!$response) return false;
-				}
-			}
-		}
 	}
 
 	function shutdown() {
